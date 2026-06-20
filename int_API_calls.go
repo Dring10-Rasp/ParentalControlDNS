@@ -1,8 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
-	"fmt"
+	"encoding/json"
 	"io"
 	"net/http"
 	"time"
@@ -19,7 +20,7 @@ type API_OUTPUT struct {
 	exitCode int
 }
 
-func instAPICall(url, method string, headers []Header) API_OUTPUT {
+func instAPICall(url, method string, payload any, headers []Header) API_OUTPUT {
 	// THIS IS FOR TESTING ONLYY <====== >:(
 	transportClient := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -29,11 +30,22 @@ func instAPICall(url, method string, headers []Header) API_OUTPUT {
 		Timeout:   10 * time.Second,
 		Transport: transportClient,
 	}
+	var parsedJson io.Reader
+	if payload != nil {
+		jsonBytes, errorPayload := json.Marshal(payload)
+		if errorPayload != nil {
+			return API_OUTPUT{[]byte{}, errorPayload, -1}
+		}
 
-	requestAPI, errorRequest := http.NewRequest(method, url, nil)
+		parsedJson = bytes.NewReader(jsonBytes)
+	} else {
+		parsedJson = nil
+	}
+	requestAPI, errorRequest := http.NewRequest(method, url, parsedJson)
+
 	if errorRequest != nil {
 		//log.Fatalf("Failed to create request: %v", errorRequest)
-		return API_OUTPUT{[]byte{}, errorRequest, 0}
+		return API_OUTPUT{[]byte{}, errorRequest, -2}
 	}
 	for _, header := range headers {
 		requestAPI.Header.Set(header.key, header.val)
@@ -41,7 +53,7 @@ func instAPICall(url, method string, headers []Header) API_OUTPUT {
 	responseAPI, errorResponse := client.Do(requestAPI)
 	if errorResponse != nil {
 		//log.Fatalf("Failed to send request: %v", errorResponse)
-		return API_OUTPUT{[]byte{}, errorResponse, -1}
+		return API_OUTPUT{[]byte{}, errorResponse, -3}
 	}
 	responseContent, errorContent := io.ReadAll(responseAPI.Body)
 	if errorContent != nil {
@@ -52,22 +64,5 @@ func instAPICall(url, method string, headers []Header) API_OUTPUT {
 	defer responseAPI.Body.Close()
 
 	return API_OUTPUT{responseContent, nil, responseAPI.StatusCode}
-
-}
-func main() {
-	headers := [2]Header{
-		{"accept", "application/json"},
-		{"sid", "Rwp7xIayacRWCCfL9PNmTQ="},
-	}
-	url := "https://192.168.1.10:443/api/groups"
-	responseAPI := instAPICall(url, http.MethodGet, headers[:])
-	if responseAPI.err != nil {
-		//log.Fatalf("Failed to read body: %v", responseAPI.err)
-	}
-
-	fmt.Printf("Exit code: %d\n", responseAPI.exitCode)
-
-	fmt.Printf("Response: %s\n", string(responseAPI.load))
-	fmt.Printf("Error: %v\n", responseAPI.err)
 
 }
