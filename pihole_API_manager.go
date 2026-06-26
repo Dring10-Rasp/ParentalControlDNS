@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-
-	"github.com/joho/godotenv"
 )
 
 var ipRoute = "https://192.168.1.10:443/api"
@@ -67,13 +65,8 @@ func get_history() ([]History, error) {
 
 	return response.History, nil
 }
-func main() {
-	errorEnv := godotenv.Load()
-	if errorEnv != nil {
-		fmt.Printf("Error Loading the env file: %v\n", errorEnv)
-	}
-	sID = os.Getenv("SID")
 
+func validationSID() {
 	sID_valid, error_sID_Validation := verify_sid()
 	if error_sID_Validation != nil || sID_valid == false {
 		fmt.Printf("sID invalid!\nGenerating a new sID\n")

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Login</title>
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --background: #0f172a;
+            --surface: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --error: #ef4444;
+            --success: #22c55e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1.25rem;
+        }
+
+        .login-container {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            padding-right: 3rem; /* Leave space for the toggle button */
+            background-color: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            user-select: none;
+            padding: 0.25rem;
+        }
+
+        .toggle-password:hover {
+            color: var(--text);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 0.5rem;
+        }
+
+        .btn-submit:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .message {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            text-align: center;
+            display: none;
+        }
+
+        .message.error {
+            display: block;
+            background-color: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+        }
+
+        .message.success {
+            display: block;
+            background-color: rgba(34, 197, 94, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <div class="header">
+            <h1>Welcome Back</h1>
+            <p>Please enter your credentials to log in</p>
+        </div>
+
+        <form id="loginForm" novalidate>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-wrapper">
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        class="form-input" 
+                        required 
+                        autocomplete="current-password"
+                        placeholder="••••••••"
+                    >
+                    <button type="button" id="togglePassword" class="toggle-password" aria-label="Show password">Show</button>
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn-submit">Sign In</button>
+            <div id="feedbackMessage" class="message"></div>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('loginForm');
+            const passwordInput = document.getElementById('password');
+            const togglePasswordBtn = document.getElementById('togglePassword');
+            const submitBtn = document.getElementById('submitBtn');
+            const feedbackMessage = document.getElementById('feedbackMessage');
+
+            // 1. Password Visibility Toggle
+            togglePasswordBtn.addEventListener('click', () => {
+                const isPassword = passwordInput.getAttribute('type') === 'password';
+                
+                if (isPassword) {
+                    passwordInput.setAttribute('type', 'text');
+                    togglePasswordBtn.textContent = 'Hide';
+                    togglePasswordBtn.setAttribute('aria-label', 'Hide password');
+                } else {
+                    passwordInput.setAttribute('type', 'password');
+                    togglePasswordBtn.textContent = 'Show';
+                    togglePasswordBtn.setAttribute('aria-label', 'Show password');
+                }
+            });
+
+            // 2. Form Submission Handling
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault(); // Prevent standard browser form submission
+
+                const password = passwordInput.value.trim();
+
+                // Client-side validation check
+                if (!password) {
+                    showFeedback('Password field cannot be empty.', 'error');
+                    return;
+                }
+
+                // Prepare loading state
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Authenticating...';
+                hideFeedback();
+
+                // Construct absolute URL endpoint dynamically
+                    const targetUrl = `${window.location.origin}${window.location.pathname.replace(/\/$/, "")}/req/auth`;
+                //const targetUrl = "192.168.1.10:443/auth"
+                try {
+                    const response = await fetch(targetUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ password: password })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        showFeedback('Login successful! Redirecting...', 'success');
+                        // Handle post-login redirection logic here if needed
+                    } else {
+                        // Handle server-side errors (e.g., 401 Unauthorized, 400 Bad Request)
+                        const errData = await response.json().catch(() => ({}));
+                        const errMsg = errData.message || 'Invalid credentials or server error.';
+                        showFeedback(errMsg, 'error');
+                    }
+                } catch (error) {
+                    // Handle network errors
+                    showFeedback('Network error. Please check your connection and try again.', 'error');
+                    console.error('Authentication error:', error);
+                } finally {
+                    // Reset loading state
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Sign In';
+                }
+            });
+
+            // Helper UI Functions
+            function showFeedback(text, type) {
+                feedbackMessage.textContent = text;
+                feedbackMessage.className = `message ${type}`;
+            }
+
+            function hideFeedback() {
+                feedbackMessage.textContent = '';
+                feedbackMessage.className = 'message';
+            }
+        });
+    </script>
+</body>
+</html>
